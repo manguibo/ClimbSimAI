@@ -1,25 +1,17 @@
 "use client"
 
-import { useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import type { UserMetrics } from "@/types/climbing"
-
-const DEFAULT_METRICS: UserMetrics = {
-  height: 175,
-  wingspan: 178,
-  apeIndex: 3,
-  mobility: 6
+interface UserMetricsFormProps {
+  metrics: UserMetrics
+  onMetricChange: <K extends keyof UserMetrics>(key: K, value: number) => void
+  onGenerate: () => void
+  isGenerating: boolean
 }
 
-export function UserMetricsForm() {
-  const [metrics, setMetrics] = useState<UserMetrics>(DEFAULT_METRICS)
-
-  function updateMetric<K extends keyof UserMetrics>(key: K, value: number) {
-    setMetrics((prev) => ({ ...prev, [key]: value }))
-  }
+export function UserMetricsForm({ metrics, onMetricChange, onGenerate, isGenerating }: UserMetricsFormProps) {
 
   return (
     <Card>
@@ -32,7 +24,7 @@ export function UserMetricsForm() {
           <Input
             type="number"
             value={metrics.height}
-            onChange={(event) => updateMetric("height", Number(event.target.value))}
+            onChange={(event) => onMetricChange("height", Number(event.target.value))}
           />
         </label>
         <label className="grid gap-1 text-sm">
@@ -40,7 +32,7 @@ export function UserMetricsForm() {
           <Input
             type="number"
             value={metrics.wingspan}
-            onChange={(event) => updateMetric("wingspan", Number(event.target.value))}
+            onChange={(event) => onMetricChange("wingspan", Number(event.target.value))}
           />
         </label>
         <label className="grid gap-1 text-sm">
@@ -48,7 +40,7 @@ export function UserMetricsForm() {
           <Input
             type="number"
             value={metrics.apeIndex}
-            onChange={(event) => updateMetric("apeIndex", Number(event.target.value))}
+            onChange={(event) => onMetricChange("apeIndex", Number(event.target.value))}
           />
         </label>
         <label className="grid gap-1 text-sm">
@@ -58,11 +50,11 @@ export function UserMetricsForm() {
             min={1}
             max={10}
             value={metrics.mobility}
-            onChange={(event) => updateMetric("mobility", Number(event.target.value))}
+            onChange={(event) => onMetricChange("mobility", Number(event.target.value))}
           />
         </label>
-        <Button type="button" variant="outline" className="w-full">
-          Save Metrics
+        <Button type="button" variant="outline" className="w-full" onClick={onGenerate} disabled={isGenerating}>
+          {isGenerating ? "Generating..." : "Generate Beta"}
         </Button>
       </CardContent>
     </Card>

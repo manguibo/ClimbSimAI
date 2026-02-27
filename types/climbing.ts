@@ -25,3 +25,7 @@ export interface BetaResult {
   sequence: string[]
   explanations: string[]
 }
+
+export interface BetaApiError {
+  error: string
+}
