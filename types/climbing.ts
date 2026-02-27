@@ -7,6 +7,8 @@ export interface Hold {
   type: HoldType
 }
 
+export type HoldId = Hold["id"]
+
 export interface UserMetrics {
   height: number
   wingspan: number

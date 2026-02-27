@@ -6,6 +6,7 @@ import { UserMetricsForm } from "@/components/user-metrics-form"
 import { WallViewer } from "@/components/wall-viewer"
 import { Button } from "@/components/ui/button"
 import { requestBetaSequence } from "@/lib/beta-client"
+import { defaultFinishHoldId, defaultStartHoldId, orderedHoldIds } from "@/lib/holds"
 import { activeSequenceForStep, canStepBackward, canStepForward, clampStep } from "@/lib/sequence"
 import type { Hold, UserMetrics } from "@/types/climbing"
 
@@ -22,12 +23,17 @@ const DEFAULT_METRICS: UserMetrics = {
   apeIndex: 3,
   mobility: 6
 }
+const HOLD_OPTIONS = orderedHoldIds(DEMO_HOLDS)
+const DEFAULT_START_HOLD_ID = defaultStartHoldId(DEMO_HOLDS)
+const DEFAULT_FINISH_HOLD_ID = defaultFinishHoldId(DEMO_HOLDS)
 const AUTOPLAY_INTERVAL_MS = 900
 
 export function BetaWorkspace() {
   const [metrics, setMetrics] = useState<UserMetrics>(DEFAULT_METRICS)
   const [sequence, setSequence] = useState<string[]>([])
   const [explanations, setExplanations] = useState<string[]>([])
+  const [startHoldId, setStartHoldId] = useState(DEFAULT_START_HOLD_ID)
+  const [finishHoldId, setFinishHoldId] = useState(DEFAULT_FINISH_HOLD_ID)
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [error, setError] = useState("")
@@ -38,14 +44,19 @@ export function BetaWorkspace() {
   }
 
   async function generate() {
+    if (!startHoldId || !finishHoldId || startHoldId === finishHoldId) {
+      setError("Choose different start and finish holds.")
+      return
+    }
+
     setIsGenerating(true)
     setError("")
 
     try {
       const result = await requestBetaSequence({
         holds: DEMO_HOLDS,
-        startHoldId: "h1",
-        finishHoldId: "h4",
+        startHoldId,
+        finishHoldId,
         userMetrics: metrics
       })
 
@@ -110,6 +121,36 @@ export function BetaWorkspace() {
         <WallViewer holds={DEMO_HOLDS} activeSequence={activeSequence} />
       </section>
       <section className="space-y-3 rounded-md border bg-card p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="grid gap-1 text-sm">
+            Start Hold
+            <select
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              value={startHoldId}
+              onChange={(event) => setStartHoldId(event.target.value)}
+            >
+              {HOLD_OPTIONS.map((holdId) => (
+                <option key={`start-${holdId}`} value={holdId}>
+                  {holdId}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">
+            Finish Hold
+            <select
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              value={finishHoldId}
+              onChange={(event) => setFinishHoldId(event.target.value)}
+            >
+              {HOLD_OPTIONS.map((holdId) => (
+                <option key={`finish-${holdId}`} value={holdId}>
+                  {holdId}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <p className="text-sm text-muted-foreground">{error || explanation}</p>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={previousStep} disabled={!canStepBackward(currentStep)}>
