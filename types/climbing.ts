@@ -18,8 +18,8 @@ export interface UserMetrics {
 
 export interface BetaRequest {
   holds: Hold[]
-  startHoldId: string
-  finishHoldId: string
+  startHoldId: HoldId
+  finishHoldId: HoldId
   userMetrics: UserMetrics
 }
 

@@ -1,13 +1,14 @@
-import type { BetaRequest } from "@/types/climbing"
 import { generateBetaSequence } from "@/lib/betaRules"
+import { validateBetaRequest } from "@/lib/beta-validation"
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as Partial<BetaRequest>
+  const body = (await req.json()) as unknown
+  const validation = validateBetaRequest(body)
 
-  if (!body || !Array.isArray(body.holds) || !body.startHoldId || !body.finishHoldId || !body.userMetrics) {
-    return Response.json({ error: "Invalid input" }, { status: 400 })
+  if (!validation.ok) {
+    return Response.json({ error: validation.error }, { status: 400 })
   }
 
-  const result = generateBetaSequence(body as BetaRequest)
+  const result = generateBetaSequence(validation.data)
   return Response.json(result)
 }
