@@ -22,3 +22,11 @@ export function activeSequenceForStep(sequence: string[], step: number): string[
   const safeStep = clampStep(step, sequence.length)
   return sequence.slice(0, safeStep)
 }
+
+export function canStepBackward(step: number): boolean {
+  return step > 1
+}
+
+export function canStepForward(step: number, sequenceLength: number): boolean {
+  return sequenceLength > 0 && step < sequenceLength
+}

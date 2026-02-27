@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { UserMetricsForm } from "@/components/user-metrics-form"
 import { WallViewer } from "@/components/wall-viewer"
 import { Button } from "@/components/ui/button"
 import { requestBetaSequence } from "@/lib/beta-client"
-import { activeSequenceForStep, clampStep } from "@/lib/sequence"
+import { activeSequenceForStep, canStepBackward, canStepForward, clampStep } from "@/lib/sequence"
 import type { Hold, UserMetrics } from "@/types/climbing"
 
 const DEMO_HOLDS: Hold[] = [
@@ -22,12 +22,14 @@ const DEFAULT_METRICS: UserMetrics = {
   apeIndex: 3,
   mobility: 6
 }
+const AUTOPLAY_INTERVAL_MS = 900
 
 export function BetaWorkspace() {
   const [metrics, setMetrics] = useState<UserMetrics>(DEFAULT_METRICS)
   const [sequence, setSequence] = useState<string[]>([])
   const [explanations, setExplanations] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
   const [error, setError] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -50,12 +52,14 @@ export function BetaWorkspace() {
       setSequence(result.sequence)
       setExplanations(result.explanations)
       setCurrentStep(result.sequence.length > 0 ? 1 : 0)
+      setIsPlaying(false)
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Unable to generate beta"
       setError(message)
       setSequence([])
       setExplanations([])
       setCurrentStep(0)
+      setIsPlaying(false)
     } finally {
       setIsGenerating(false)
     }
@@ -68,6 +72,28 @@ export function BetaWorkspace() {
   function nextStep() {
     setCurrentStep((prev) => clampStep(prev + 1, sequence.length))
   }
+
+  function resetSteps() {
+    setCurrentStep(sequence.length > 0 ? 1 : 0)
+    setIsPlaying(false)
+  }
+
+  useEffect(() => {
+    if (!isPlaying || sequence.length === 0) {
+      return
+    }
+
+    if (!canStepForward(currentStep, sequence.length)) {
+      setIsPlaying(false)
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setCurrentStep((prev) => clampStep(prev + 1, sequence.length))
+    }, AUTOPLAY_INTERVAL_MS)
+
+    return () => clearTimeout(timer)
+  }, [currentStep, isPlaying, sequence.length])
 
   const activeSequence = activeSequenceForStep(sequence, currentStep)
   const explanation = currentStep > 0 ? explanations[currentStep - 1] : "Generate a beta sequence to start."
@@ -86,7 +112,7 @@ export function BetaWorkspace() {
       <section className="space-y-3 rounded-md border bg-card p-4">
         <p className="text-sm text-muted-foreground">{error || explanation}</p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={previousStep} disabled={currentStep <= 1}>
+          <Button type="button" variant="outline" size="sm" onClick={previousStep} disabled={!canStepBackward(currentStep)}>
             Previous
           </Button>
           <Button
@@ -94,9 +120,21 @@ export function BetaWorkspace() {
             variant="outline"
             size="sm"
             onClick={nextStep}
-            disabled={sequence.length === 0 || currentStep >= sequence.length}
+            disabled={!canStepForward(currentStep, sequence.length)}
           >
             Next
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPlaying((prev) => !prev)}
+            disabled={sequence.length === 0 || currentStep >= sequence.length}
+          >
+            {isPlaying ? "Pause" : "Play"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={resetSteps} disabled={sequence.length === 0}>
+            Reset
           </Button>
           <p className="text-xs text-muted-foreground">
             Step {currentStep} / {sequence.length}
